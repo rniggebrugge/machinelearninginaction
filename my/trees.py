@@ -60,7 +60,7 @@ def majorityCnt(classList):
 		if vote not in classCount.keys(): classCount[vote]=0
 		classCount[vote] += 1
 	sortClassCount = sorted(classCount.iteritems(), key=operator.itemgetter(1), reverse=True)
-	return sortClassCount[0][0]
+	return sortClassCount[0][0]  #+str(" (%.2f )" % (float(sortClassCount[0][1])/len(classList)))
 
 def createTree(dataSet, labels):
 	classList = [example[-1] for example in dataSet]
@@ -78,3 +78,27 @@ def createTree(dataSet, labels):
 	for value in uniqueVals:
 		myTree[bestFeatLabel][value] = createTree(splitDataSet(dataSet, bestFeat, value), subLabels)
 	return myTree
+
+def classify(inputTree, featLabels, testVec):
+	firstStr = inputTree.keys()[0]
+	secondDict = inputTree[firstStr]
+	featIndex = featLabels.index(firstStr)
+	classLabel = 'unclassified'
+	for key in secondDict.keys():
+		if testVec[featIndex] == key:
+			if type(secondDict[key]).__name__ == 'dict':
+				classLabel = classify(secondDict[key], featLabels, testVec)
+			else:
+				classLabel = secondDict[key]
+	return classLabel
+
+def storeTree(inTree, filename):
+	import pickle
+	fw = open(filename, 'w')
+	pickle.dump(inTree, fw)
+	fw.close()
+
+def grabTree(filename):
+	import pickle
+	fr = open(filename)
+	return pickle.load(fr)
