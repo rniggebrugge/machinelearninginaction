@@ -1,4 +1,5 @@
 from math import log
+import operator
 
 def calcShannonEnt(dataSet):
 	numEntries = len(dataSet)
@@ -34,6 +35,8 @@ def splitDataSet(dataSet, axis, value):
 
 def chooseBestFeatureToSplit(dataSet):
 	numFeatures = len(dataSet[0]) - 1
+	if numFeatures == 1:
+		return 0
 	baseEntropy = calcShannonEnt(dataSet)
 	bestInfoGain = 0.0; bestFeature = -1
 	for i in range(numFeatures):
@@ -45,9 +48,33 @@ def chooseBestFeatureToSplit(dataSet):
 			prob = len(subDataSet)/float(len(dataSet))
 			newEntropy += prob * calcShannonEnt(subDataSet)
 		infoGain = baseEntropy - newEntropy
-		print "feature %d, entropy %f, infogain: %f" % (i,newEntropy, infoGain)
+		# print "feature %d, entropy %f, infogain: %f" % (i,newEntropy, infoGain)
 		if (infoGain > bestInfoGain):
 			bestInfoGain = infoGain
 			bestFeature = i
 	return bestFeature
 
+def majorityCnt(classList):
+	classCount = {}
+	for vote in classList:
+		if vote not in classCount.keys(): classCount[vote]=0
+		classCount[vote] += 1
+	sortClassCount = sorted(classCount.iteritems(), key=operator.itemgetter(1), reverse=True)
+	return sortClassCount[0][0]
+
+def createTree(dataSet, labels):
+	classList = [example[-1] for example in dataSet]
+	if classList.count(classList[0]) == len(classList):
+		return classList[0]
+	if len(dataSet[0]) == 1:
+		return majorityCnt(classList)
+	bestFeat = chooseBestFeatureToSplit(dataSet)
+	bestFeatLabel = labels[bestFeat]
+	myTree = { bestFeatLabel: {}}
+	subLabels = labels[:]
+	del(subLabels[bestFeat])
+	featValues = [example[bestFeat] for example in dataSet]
+	uniqueVals = set(featValues)
+	for value in uniqueVals:
+		myTree[bestFeatLabel][value] = createTree(splitDataSet(dataSet, bestFeat, value), subLabels)
+	return myTree
