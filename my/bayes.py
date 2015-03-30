@@ -193,6 +193,7 @@ def testLoopLocal(n, f0, f1):
 def getTopWords(n,ny,sf):
 	import operator
 	er, vocabList,p0V, p1V = localWords(ny, sf)
+		
 	topNY=[]
 	topSF=[]
 	for i in range(len(p0V)):
