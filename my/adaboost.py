@@ -17,56 +17,81 @@ def stumpClassify(dataMatrix, dimen, threshVal, threshIneq):
 		retArray[dataMatrix[:,dimen] > threshVal] = -1.0
 	return retArray
 
-def buildStump(dataArr, classLabels, D):
+def buildSplitMatrix(dataArr, numSteps = 10.0):
 	dataMatrix = mat(dataArr);
-	labelMat = mat(classLabels).T 
 	m,n = shape(dataMatrix)
-	numSteps = 10.0
-	bestStump = {}
-	bestClasEst = mat(zeros((m,1)))
-	minError = inf 
+	splitMatrix = zeros((m, (int(numSteps)+2)*n))
+	threshVals = zeros((n, int(numSteps)+2))
+	column = 0
 	for i in range(n):
 		rangeMin = dataMatrix[:,i].min()
 		rangeMAx = dataMatrix[:,i].max()
 		stepSize = (rangeMAx - rangeMin)/numSteps
 		for j in range(-1, int(numSteps)+1):
 			threshVal = (rangeMin + float(j) * stepSize)
-			for inequal in ['lt', 'gt']:
-				predictedVal = stumpClassify(dataMatrix)
+			threshVals[i,j+1] = threshVal
+			predictedValsLT = stumpClassify(dataMatrix, i, threshVal, 'lt')
+			splitMatrix[:, column] = predictedValsLT[:,0]
+			column += 1
+	return splitMatrix, threshVals
 
-
-def adaBoostTrainDS(dataArr, classLabels, numIt = 40):
-	weakClassArr = []
+def buildStump(dataArr, classLabels, D, splitMatrix):
+	dataMatrix = mat(dataArr);
 	labelMat = mat(classLabels).T 
+	m,n = shape(dataMatrix)
+	bestStump = {}
+	bestClassEst = mat(zeros((m,1)))
+	minError = inf 
+	numSteps = shape(splitMatrix)[1]/n - 2.
+	readColumn = 0
+
+	for i in range(n):
+		for j in range(-1, int(numSteps)+1):
+			for inequal in [1, -1]:  ##!!!!!! 1 correspondts with lt, -1 with gt
+				predictedVals = inequal * mat(splitMatrix[:,readColumn])
+				errArr =mat(ones((m,1)))
+				errArr[predictedVals.T == labelMat] =0
+				weightedError = D.T*errArr
+#				print "split: dim %d, thresh %.2f, inequal %s, error %.3f" % (i, threshVal, inequal, weightedError)
+				if weightedError < minError:
+					minError = weightedError
+					bestClassEst = predictedVals.copy()
+					bestStump['dim'] = i 
+					bestStump['thresh'] = j
+					bestStump['ineq'] = 'lt' if inequal==1 else 'gt'
+			readColumn += 1
+	
+	print bestStump
+	return bestStump, minError, bestClassEst
+
+
+
+def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5):
+	weakClassArr = []
 	m = shape(dataArr)[0]
 	D = mat(ones((m,1))/m)
-	aggClasEst = mat(zeros((m,9)))
+	classMat = mat(classLabels)
+	splitMatrix, threshVals = buildSplitMatrix(dataArr, float(splits))
+	print threshVals
+	aggClassEst = mat(zeros((m,1)))
+
 	for i in range(numIt):
-		bestStump, error, classEst = buildStump(dataArr, classLabels, D)
-		# print "D:", D.T
-		alpha = float(log((1.0-error)/max(error, 1e-16)))+log(8)
+		print "===================",i, "========================================"
+		bestStump, error, classEst = buildStump(dataArr, classLabels,D, splitMatrix)
+		alpha = float(0.5*log((1.0-error)/max(error,1e-16)))
 		bestStump['alpha'] = alpha
 		weakClassArr.append(bestStump)
-
-		errArr = -1* mat(ones((m,1)))
-		errArr[classEst==labelMat] = 1
-
-		# print errArr.T
-		expon = -1*alpha*errArr
+		expon = multiply(-1*alpha*mat(classLabels).T, classEst.T)
 		D = multiply(D, exp(expon))
 		D = D/D.sum()
-		# print D.T
-		# for j in range(m):
-		# 	aggClasEst[j,int(classEst[j])]+=alpha;
-		# aggClasEst += alpha*classEst
-		# aggClasEst = (i*aggClasEst + classEst)/(i+1)
-		# print "aggClasEst: \n", aggClasEst.T
-		# aggErrors = multiply(sign(aggClasEst) != mat(classLabels).T, ones((m,1)) )
-		# errorRate = aggErrors.sum()/m
-		# print "%d / total error: %.3f" % (i+1, errorRate)
-		# if errorRate==0.0: break
-		# raw_input()
-	# return weakClassArr, aggClasEst
+		aggClassEst += alpha*classEst.T
+#		print "aggClassEst: ", aggClassEst.T
+		aggErrors = multiply(sign(aggClassEst) != classMat.T, ones((m,1)))
+		errorRate = aggErrors.sum()/m
+		print "total error: ", errorRate
+#		if errorRate == 0.0: break
+	return weakClassArr
+
 
 def adaClassify(datToClass, classifierArr):
 	dataMatrix = mat(datToClass)
@@ -109,16 +134,23 @@ def plotROC(predStrengts, classLabels):
 	plt.show()
 	print "The area under the curve is: ", ySum*xStep
 
-def loadKaggleSet(filename):
-	numFeat = len(open(filename).readline().split(','))
+def loadData(filename, splitChar = '\t', lookFor = 0):
+	numFeat = len(open(filename).readline().split(splitChar))
 	dataMat = []
 	labelMat =[]
 	fr = open(filename)
 	for line in fr.readlines():
 		lineArr = []
-		curLine = line.strip().split(',')
+		curLine = line.strip().split(splitChar)
 		for i in range(numFeat-1):
 			lineArr.append(float(curLine[i]))
 		dataMat.append(lineArr)
 		labelMat.append(float(curLine[-1]))
+	labelMat = mat(labelMat)
+	if lookFor!=0:
+		print "relabelling"
+		labelMat[labelMat!=lookFor] = -1
+		labelMat[labelMat==lookFor] = 1
+	
+	dataMat = log(mat(dataMat)+1)
 	return dataMat, labelMat
