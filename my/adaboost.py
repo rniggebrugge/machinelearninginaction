@@ -88,6 +88,8 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5):
 #		print "aggClassEst: ", aggClassEst.T
 		aggErrors = multiply(sign(aggClassEst) != classMat.T, ones((m,1)))
 		errorRate = aggErrors.sum()/m
+		tp = sum(aggClassEst>0)
+		print tp
 		print "total error: ", errorRate
 #		if errorRate == 0.0: break
 	return weakClassArr
@@ -152,5 +154,5 @@ def loadData(filename, splitChar = '\t', lookFor = 0):
 		labelMat[labelMat!=lookFor] = -1
 		labelMat[labelMat==lookFor] = 1
 	
-	dataMat = log(mat(dataMat)+1)
+	# dataMat = log(mat(dataMat)+1)
 	return dataMat, labelMat
