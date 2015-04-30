@@ -116,7 +116,6 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 			classLabels_revised = mat(classLabels)
 
 		for i in range(numIt):
-#			print "===================",i, "========================================"
 			bestStump, error, classEst = buildStump(dataArr, classLabels_revised,D, splitMatrix)
 			alpha = float(0.5*log((1.0-error)/max(error,1e-16)))
 			bestStump['alpha'] = alpha
@@ -126,8 +125,9 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 			D = D/D.sum()
 			aggClassEst += alpha*classEst.T
 	#		print "aggClassEst: ", aggClassEst.T
-	#		aggErrors = multiply(sign(aggClassEst) != classLabels_revised.T, ones((m,1)))
-	#		errorRate = aggErrors.sum()/m
+			aggErrors = multiply(sign(aggClassEst) != classLabels_revised.T, ones((m,1)))
+			errorRate = aggErrors.sum()/m
+			print "class %d , iteration: %d,  error rate: %.3f " % ( int(ul) , i , errorRate)
 	#		tp = sum((aggClassEst>0) & (classMat==1))
 	#		fp = sum((aggClassEst>0) & (classMat==-1))
 	#		fn = sum((aggClassEst<=0) & (classMat==1))
