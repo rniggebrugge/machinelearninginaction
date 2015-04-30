@@ -82,7 +82,7 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 			column += 1
 
 
-	D = mat(ones((m,1))/m)
+	D = mat(ones((m,nClassications))/m)
 	splitMatrix, threshVals = buildSplitMatrix(dataArr, float(splits))
 	aggClassEst = mat(zeros((m,1)))
 
