@@ -81,8 +81,6 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 			multiLabelMatrix[:,column] = mat((classMat ==i)*2-1).T
 			column += 1
 
-		print multiLabelMatrix[0:6,:]
-
 
 	D = mat(ones((m,1))/m)
 	splitMatrix, threshVals = buildSplitMatrix(dataArr, float(splits))
