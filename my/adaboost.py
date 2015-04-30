@@ -9,6 +9,23 @@ def loadSimpData():
 	classLabels = [1.0, 1.0, -1.0, -1.0, 1.0]
 	return datMat, classLabels
 
+def loadSimpDataMulti():
+	datMat = matrix([[1., 2.1001],
+		[2., 1.1002],
+		[1.3, 1.0003 ],
+		[1. , 1.0004],
+		[2., 1.0005],
+		[3., 2.0006],
+		[6., 0.0007],
+		[2., 10.0008],
+		[6., 8.0009],
+		[19., 11.00010],
+		[8., 4.00011],
+		[7.6, 5.00012],
+		[5., 1.20013]])
+	classLabels = [1.0, 1.0, 2.0, 2.0, 1.0, 3.0, 3.0, 4.0, 4.0, 4.0, 3.0, 2.0, 3.0]
+	return datMat, classLabels
+
 def stumpClassify(dataMatrix, dimen, threshVal, threshIneq):
 	retArray = ones((shape(dataMatrix)[0],1))
 	if threshIneq == 'lt':
@@ -61,7 +78,6 @@ def buildStump(dataArr, classLabels, D, splitMatrix):
 					bestStump['ineq'] = 'lt' if inequal==1 else 'gt'
 			readColumn += 1
 	
-	print bestStump
 	return bestStump, minError, bestClassEst
 
 
@@ -82,32 +98,51 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 			column += 1
 
 
-	D = mat(ones((m,nClassications))/m)
 	splitMatrix, threshVals = buildSplitMatrix(dataArr, float(splits))
-	aggClassEst = mat(zeros((m,1)))
 
-	for i in range(numIt):
-		print "===================",i, "========================================"
-		bestStump, error, classEst = buildStump(dataArr, classLabels,D, splitMatrix)
-		alpha = float(0.5*log((1.0-error)/max(error,1e-16)))
-		bestStump['alpha'] = alpha
-		weakClassArr.append(bestStump)
-		expon = multiply(-1*alpha*mat(classLabels).T, classEst.T)
-		D = multiply(D, exp(expon))
-		D = D/D.sum()
-		aggClassEst += alpha*classEst.T
-#		print "aggClassEst: ", aggClassEst.T
-		aggErrors = multiply(sign(aggClassEst) != classMat.T, ones((m,1)))
-		errorRate = aggErrors.sum()/m
-#		tp = sum((aggClassEst>0) & (classMat==1))
-#		fp = sum((aggClassEst>0) & (classMat==-1))
-#		fn = sum((aggClassEst<=0) & (classMat==1))
-#		precision = float(tp)/(tp+fp)
-#		recall = float(tp)/(tp+fn)
-#		print "total error: %.3f, precision: %.3f, recall: %.3f " % \
-#			(errorRate, precision, recall)
-		print "total error: %.3f " % errorRate
-#		if errorRate == 0.0: break
+	for classification in range(nClassifications):
+
+	#	print "\n************************************************************************"
+		print "Performing classification %d " % (classification+1)
+#		print "************************************************************************"
+
+		D = mat(ones((m,1))/m)
+		aggClassEst = mat(zeros((m,1)))
+		if multi:
+			ul = uniqueLabels[classification]
+#			print "   ---  Looking for %d ---" % ul
+			classLabels_revised = mat((classMat == ul)*2-1)
+		else:
+			classLabels_revised = mat(classLabels)
+
+		for i in range(numIt):
+#			print "===================",i, "========================================"
+			bestStump, error, classEst = buildStump(dataArr, classLabels_revised,D, splitMatrix)
+			alpha = float(0.5*log((1.0-error)/max(error,1e-16)))
+			bestStump['alpha'] = alpha
+			weakClassArr.append(bestStump)
+			expon = multiply(-1*alpha*mat(classLabels_revised).T, classEst.T)
+			D = multiply(D, exp(expon))
+			D = D/D.sum()
+			aggClassEst += alpha*classEst.T
+	#		print "aggClassEst: ", aggClassEst.T
+			aggErrors = multiply(sign(aggClassEst) != classLabels_revised.T, ones((m,1)))
+			errorRate = aggErrors.sum()/m
+	#		tp = sum((aggClassEst>0) & (classMat==1))
+	#		fp = sum((aggClassEst>0) & (classMat==-1))
+	#		fn = sum((aggClassEst<=0) & (classMat==1))
+	#		precision = float(tp)/(tp+fp)
+	#		recall = float(tp)/(tp+fn)
+	#		print "total error: %.3f, precision: %.3f, recall: %.3f " % \
+	#			(errorRate, precision, recall)
+	#		print "total error: %.3f " % errorRate
+	#		if errorRate == 0.0: break
+
+		print "Final result for class %d" % ul
+		print "\nP: " , mat(aggClassEst.T>0)*1
+		print "\nA: " , mat(classLabels_revised>0)*1
+#		print "\n" , aggClassEst.T
+		print "\n"
 	return weakClassArr
 
 
