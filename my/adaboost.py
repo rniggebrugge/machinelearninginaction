@@ -126,8 +126,8 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 			D = D/D.sum()
 			aggClassEst += alpha*classEst.T
 	#		print "aggClassEst: ", aggClassEst.T
-			aggErrors = multiply(sign(aggClassEst) != classLabels_revised.T, ones((m,1)))
-			errorRate = aggErrors.sum()/m
+	#		aggErrors = multiply(sign(aggClassEst) != classLabels_revised.T, ones((m,1)))
+	#		errorRate = aggErrors.sum()/m
 	#		tp = sum((aggClassEst>0) & (classMat==1))
 	#		fp = sum((aggClassEst>0) & (classMat==-1))
 	#		fn = sum((aggClassEst<=0) & (classMat==1))
@@ -139,10 +139,24 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 	#		if errorRate == 0.0: break
 
 		print "Final result for class %d" % ul
-		print "\nP: " , mat(aggClassEst.T>0)*1
-		print "\nA: " , mat(classLabels_revised>0)*1
+#		print "\nP: " , mat(aggClassEst.T>0)*1
+#		print "\nA: " , mat(classLabels_revised>0)*1
+		tp = (mat((aggClassEst>0) & (classLabels_revised.T>0))*1).sum()
+		fp = (mat((aggClassEst>0) & (classLabels_revised.T<0))*1).sum()
+		fn = (mat((aggClassEst<=0) & (classLabels_revised.T>0))*1).sum()
+		precision = float(tp)/(tp+fp)
+		recall = float(tp)/(tp+fn)
+		f1 = 2*float(precision)*recall/(precision+recall)
+
+		print "-----------------------------------------------------"
+		print "TP: ", tp
+		print "FP: ", fp
+		print "FN: ", fn
+		print "Precision: %.2f " % precision
+		print "Recall: %.2f" % recall
+		print "F1-score: %.2f" % f1
+
 #		print "\n" , aggClassEst.T
-		print "\n"
 	return weakClassArr
 
 
