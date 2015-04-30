@@ -30,47 +30,43 @@ def buildStump(dataArr, classLabels, D):
 		rangeMAx = dataMatrix[:,i].max()
 		stepSize = (rangeMAx - rangeMin)/numSteps
 		for j in range(-1, int(numSteps)+1):
+			threshVal = (rangeMin + float(j) * stepSize)
 			for inequal in ['lt', 'gt']:
-				threshVal = (rangeMin + float(j) * stepSize)
-				predictedVals = stumpClassify(dataMatrix, i, threshVal, inequal)
-				errArr = mat(ones((m,1)))
-				errArr[predictedVals == labelMat] = 0
-				weightedError = D.T * errArr
-				# print "split: dim %d, thresh %.2f, thresh inequal: \
-				# 	%s, the weighted error is %.3f" %\
-				# 	(i, threshVal, inequal, weightedError)
-				if weightedError < minError:
-					minError = weightedError
-					bestClasEst = predictedVals.copy()
-					bestStump['dim'] = i 
-					bestStump['thresh'] = threshVal
-					bestStump['ineq'] = inequal
-	return bestStump, minError, bestClasEst
+				predictedVal = stumpClassify(dataMatrix)
+
 
 def adaBoostTrainDS(dataArr, classLabels, numIt = 40):
 	weakClassArr = []
+	labelMat = mat(classLabels).T 
 	m = shape(dataArr)[0]
 	D = mat(ones((m,1))/m)
-	aggClasEst = mat(zeros((m,1)))
+	aggClasEst = mat(zeros((m,9)))
 	for i in range(numIt):
 		bestStump, error, classEst = buildStump(dataArr, classLabels, D)
 		# print "D:", D.T
-		alpha = float(0.5*log((1.0-error)/max(error, 1e-16)))
+		alpha = float(log((1.0-error)/max(error, 1e-16)))+log(8)
 		bestStump['alpha'] = alpha
 		weakClassArr.append(bestStump)
-		# print "classEst: ", classEst.T
-		expon = multiply(-1*alpha*mat(classLabels).T, classEst)
+
+		errArr = -1* mat(ones((m,1)))
+		errArr[classEst==labelMat] = 1
+
+		# print errArr.T
+		expon = -1*alpha*errArr
 		D = multiply(D, exp(expon))
 		D = D/D.sum()
-		aggClasEst += alpha*classEst
+		# print D.T
+		# for j in range(m):
+		# 	aggClasEst[j,int(classEst[j])]+=alpha;
+		# aggClasEst += alpha*classEst
 		# aggClasEst = (i*aggClasEst + classEst)/(i+1)
-		# print "aggClasEst: ", aggClasEst.T
-		aggErrors = multiply(sign(aggClasEst) != mat(classLabels).T, ones((m,1)) )
-		errorRate = aggErrors.sum()/m
-		print "%d / total error: %.3f" % (i+1, errorRate)
-		if errorRate==0.0: break
+		# print "aggClasEst: \n", aggClasEst.T
+		# aggErrors = multiply(sign(aggClasEst) != mat(classLabels).T, ones((m,1)) )
+		# errorRate = aggErrors.sum()/m
+		# print "%d / total error: %.3f" % (i+1, errorRate)
+		# if errorRate==0.0: break
 		# raw_input()
-	return weakClassArr, aggClasEst
+	# return weakClassArr, aggClasEst
 
 def adaClassify(datToClass, classifierArr):
 	dataMatrix = mat(datToClass)
@@ -113,21 +109,7 @@ def plotROC(predStrengts, classLabels):
 	plt.show()
 	print "The area under the curve is: ", ySum*xStep
 
-def loadDataSet(filename):
-	numFeat= len(open(filename).readline().split('\t'))
-	dataMat = []
-	labelMat = []
-	fr = open(filename)
-	for line in fr.readlines():
-		lineArr = []
-		curLine = line.strip().split('\t')
-		for i in range(numFeat-1):
-			lineArr.append(float(curLine[i]))
-		dataMat.append(lineArr)
-		labelMat.append(float(curLine[-1]))
-	return dataMat, labelMat
-
-def loadKaggleSet(filename, getClass):
+def loadKaggleSet(filename):
 	numFeat = len(open(filename).readline().split(','))
 	dataMat = []
 	labelMat =[]
@@ -138,7 +120,5 @@ def loadKaggleSet(filename, getClass):
 		for i in range(numFeat-1):
 			lineArr.append(float(curLine[i]))
 		dataMat.append(lineArr)
-		label = float(curLine[-1])==getClass
-		label = label * 2 -1;
-		labelMat.append(label)
+		labelMat.append(float(curLine[-1]))
 	return dataMat, labelMat
