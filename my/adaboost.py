@@ -66,13 +66,26 @@ def buildStump(dataArr, classLabels, D, splitMatrix):
 
 
 
-def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5):
+def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False):
 	weakClassArr = []
-	m = shape(dataArr)[0]
-	D = mat(ones((m,1))/m)
 	classMat = mat(classLabels)
+	nClassifications = 1
+
+	m = shape(dataArr)[0]
+	if multi:
+		uniqueLabels = unique(array(classLabels))
+		nClassifications = size(uniqueLabels)
+		multiLabelMatrix = mat(zeros((m, nClassifications)))
+		column = 0
+		for i in uniqueLabels:
+			multiLabelMatrix[:,column] = mat((classMat ==i)*2-1).T
+			column += 1
+
+		print multiLabelMatrix[0:6,:]
+
+
+	D = mat(ones((m,1))/m)
 	splitMatrix, threshVals = buildSplitMatrix(dataArr, float(splits))
-	print threshVals
 	aggClassEst = mat(zeros((m,1)))
 
 	for i in range(numIt):
