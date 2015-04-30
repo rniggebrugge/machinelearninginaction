@@ -88,9 +88,14 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5):
 #		print "aggClassEst: ", aggClassEst.T
 		aggErrors = multiply(sign(aggClassEst) != classMat.T, ones((m,1)))
 		errorRate = aggErrors.sum()/m
-		tp = sum(aggClassEst>0)
-		print tp
-		print "total error: ", errorRate
+#		tp = sum((aggClassEst>0) & (classMat==1))
+#		fp = sum((aggClassEst>0) & (classMat==-1))
+#		fn = sum((aggClassEst<=0) & (classMat==1))
+#		precision = float(tp)/(tp+fp)
+#		recall = float(tp)/(tp+fn)
+#		print "total error: %.3f, precision: %.3f, recall: %.3f " % \
+#			(errorRate, precision, recall)
+		print "total error: %.3f " % errorRate
 #		if errorRate == 0.0: break
 	return weakClassArr
 
