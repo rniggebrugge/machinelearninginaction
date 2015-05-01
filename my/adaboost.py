@@ -113,6 +113,7 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 #			print "   ---  Looking for %d ---" % ul
 			classLabels_revised = mat((classMat == ul)*2-1)
 		else:
+			ul = 1
 			classLabels_revised = mat(classLabels)
 
 		for i in range(numIt):
@@ -144,9 +145,9 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 		tp = (mat((aggClassEst>0) & (classLabels_revised.T>0))*1).sum()
 		fp = (mat((aggClassEst>0) & (classLabels_revised.T<0))*1).sum()
 		fn = (mat((aggClassEst<=0) & (classLabels_revised.T>0))*1).sum()
-		precision = float(tp)/(tp+fp)
-		recall = float(tp)/(tp+fn)
-		f1 = 2*float(precision)*recall/(precision+recall)
+		precision = float(tp)/(1e-16+tp+fp)
+		recall = float(tp)/(1e-16+tp+fn)
+		f1 = 2*float(precision)*recall/(1e-16+precision+recall)
 
 		print "-----------------------------------------------------"
 		print "TP: ", tp
