@@ -45,6 +45,49 @@ def buildStump(dataArr, classLabels, D, splitMatrix):
 	bestStump['split'] = split 
  	return bestStump, minError, bestClassEst
 
+def logicalComparison(v, m, sv, cv, operator):
+	if sv=='inverse':
+		v = -v
+	if cv=='inverse':
+		m = -m
+	combi = m + v
+	if operator == 'AND':
+		combi = (combi==2)*2-1
+	elif operator =='OR':
+		combi = (combi>-2)*2-1
+	elif operator == 'XOR':
+		combi = (combi==0)*2-1
+	return combi
+
+def buildStumpComplex(dataArr, classLabels, D, splitMatrix):
+	dataMatrix = mat(dataArr)
+	nFeatures = shape(dataMatrix)[1]
+	labelMat = mat(classLabels)
+	bestStump = {}
+	nColumns = shape(splitMatrix)[1]
+	minError = inf
+
+	for i in range(nColumns-1):
+		vector = splitMatrix[:,i]
+		compareMatrix = splitMatrix[:,i+1:]
+		for sv in ['normal', 'inverse']:
+			for sm in ['normal', 'inverse']:
+				for operator in ['AND', 'XOR', 'OR']:
+					combi = logicalComparison(vector, compareMatrix, sv, sm, operator)
+					Err = -multiply(labelMat.T, combi)
+					Err[Err==-1] = 0
+					weights = D.T*Err
+					localMinError = weights.min()
+					if localMinError < minError:
+						minError = localMinError
+						split = weights.argmin()
+						bestStump['feature_1'] = i
+						bestStump['feature_2'] = i + 1 + split
+						bestStump['orientation_1'] = sv
+						bestStump['orientation_2'] = sm
+						bestStump['operator'] = operator
+						bestClassEst = combi[:, split]
+ 	return bestStump, minError, bestClassEst
 
 def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False):
 	weakClassArr = []
@@ -83,6 +126,7 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 
 		for i in range(numIt):
 			bestStump, error, classEst = buildStump(datMat, classLabels_revised,D, splitMatrix)
+			# bestStump, error, classEst = buildStumpComplex(datMat, classLabels_revised,D, splitMatrix)
 			alpha = float(0.5*log((1.0-error)/max(error,1e-16)))
 			bestStump['alpha'] = alpha
 			weakClassArr.append(bestStump)
