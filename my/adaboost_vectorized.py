@@ -13,6 +13,47 @@ def stumpClassify(dataMatrix, dimen, threshVal, threshIneq):
 		retArray[dataMatrix[:,dimen] > threshVal] = -1.0
 	return retArray
 
+def quantilesMatrix(datArr, numSteps = 10):
+	ns = int(numSteps)
+	mtrx = mat(datArr).astype(float)
+	minV = mtrx.min(0)
+	maxV = mtrx.max(0)
+	stepSize = maxV/ns
+	lowerBound = -stepSize
+	for i in range(0, ns+2):
+		upperBound = lowerBound + stepSize
+		mtrx[(mtrx>lowerBound) & (mtrx<=upperBound)] = -(i+1)
+		lowerBound = upperBound
+	mtrx = -mtrx
+	return mtrx
+
+def buildStumpQuantiles(classLabels, D, splitMatrix, numSteps):
+	ns = int(numSteps)
+	labelMat = mat(classLabels)
+	bestStump = {}
+	minErr = inf
+	for i in range(1,ns+2):
+		for j in range(i, ns+2):
+			w = -splitMatrix.copy()
+			w[(w<=-i) &(w>=-j)]=1
+			w[w!=1]=-1
+			# print w[0:4,0:4]
+
+			Err = -multiply(labelMat, w.T)
+			Err[Err==-1] = 0
+			# print "error: ",sum(Err)
+			# print labelMat
+			# print Err[0:8,0:8]
+			weights = Err * D
+			localMinError = weights.min()
+			# print localMinError
+			if localMinError<minErr:
+				minErr = localMinError
+				quantily = i
+				bestStump['dim'] = weights.argmin()
+				bestClassEst = w[:, weights.argmin()]
+ 	return bestStump, minErr, bestClassEst
+
 def buildSplitMatrix(dataArr, numSteps = 10):
 	numSteps = int(numSteps)
 	mtrx = mat(dataArr).astype(float);
@@ -106,7 +147,8 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 			column += 1
 
 
-	splitMatrix = buildSplitMatrix(datMat, splits)
+	# splitMatrix = buildSplitMatrix(datMat, splits)
+	splitMatrix = quantilesMatrix(datMat, splits)
 
 	for classification in range(nClassifications):
 
@@ -125,8 +167,9 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 			classLabels_revised = mat(classLabels)
 
 		for i in range(numIt):
-			bestStump, error, classEst = buildStump(datMat, classLabels_revised,D, splitMatrix)
+			# bestStump, error, classEst = buildStump(datMat, classLabels_revised,D, splitMatrix)
 			# bestStump, error, classEst = buildStumpComplex(datMat, classLabels_revised,D, splitMatrix)
+			bestStump, error, classEst = buildStumpQuantiles(classLabels_revised, D, splitMatrix, splits)
 			alpha = float(0.5*log((1.0-error)/max(error,1e-16)))
 			bestStump['alpha'] = alpha
 			weakClassArr.append(bestStump)
@@ -137,8 +180,11 @@ def adaBoostTrainDS(dataArr, classLabels, numIt = 40, splits = 5, multi = False)
 			aggErrors = multiply(sign(aggClassEst) != classLabels_revised.T, ones((m,1)))
 			errorRate = aggErrors.sum()/m
 			print "class %d , iteration: %d,  error rate: %.3f " % ( int(ul) , i , errorRate)
+			if errorRate == 0.0: 
+				print "Zero error. Break out."
+				break
 
-
+		print "\n================================================================\ntotal iterations: ",i		
 		tp = (mat((aggClassEst>0) & (classLabels_revised.T>0))*1).sum()
 		fp = (mat((aggClassEst>0) & (classLabels_revised.T<0))*1).sum()
 		fn = (mat((aggClassEst<=0) & (classLabels_revised.T>0))*1).sum()
