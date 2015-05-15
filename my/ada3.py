@@ -30,9 +30,12 @@ def buildSplitMatrix(dataArr, numSteps = 10):
 					lowerLimit2 = lowerLimit1 + j*(numSteps+2) + k * halfsize
 					upperLimit2 = lowerLimit2 + numSteps + 1
 					addedBlock = retMatrix2[:,lowerLimit1:upperLimit1] + retMatrix2[:,lowerLimit2:upperLimit2]
-					addedBlock = (addedBlock==2)*2-1
-					if (addedBlock.max()==1 and addedBlock.min()==-1):
-						retMatrix2 = concatenate((retMatrix2, addedBlock),1)
+					addedBlockAnd = (addedBlock==2)*2-1
+					addedBlockOr = (addedBlock>-2)*2-1
+					if (addedBlockAnd.max()==1 and addedBlockAnd.min()==-1):
+						retMatrix2 = concatenate((retMatrix2, addedBlockAnd),1)
+					if (addedBlockOr.max()==1 and addedBlockOr.min()==-1):
+						retMatrix2 = concatenate((retMatrix2, addedBlockOr),1)
 					print lowerLimit1, upperLimit1, lowerLimit2, upperLimit2
 	print shape(retMatrix2)		
 	return retMatrix2
