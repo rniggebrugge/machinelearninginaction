@@ -21,10 +21,10 @@ def buildSplitMatrix(dataArr, numSteps = 10):
 			retMatrix = concatenate((retMatrix, temp), axis=1)
 	halfsize = shape(retMatrix)[1]
 	retMatrix2 = concatenate((retMatrix, -retMatrix), 1);
-	for i in range(nFeatures-2):
+	for i in range(nFeatures-1):
 		lowerLimit1 = i*(numSteps+2)
 		upperLimit1 = lowerLimit1+numSteps+1
-		for j in range(3):
+		for j in range(2):
 			for k in range(2):
 				if (j>0 or k>0):
 					lowerLimit2 = lowerLimit1 + j*(numSteps+2) + k * halfsize
