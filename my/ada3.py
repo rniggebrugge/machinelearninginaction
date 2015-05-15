@@ -31,9 +31,9 @@ def buildSplitMatrix(dataArr, numSteps = 10):
 					upperLimit2 = lowerLimit2 + numSteps + 1
 					addedBlock = retMatrix2[:,lowerLimit1:upperLimit1] + retMatrix2[:,lowerLimit2:upperLimit2]
 					addedBlock = (addedBlock==2)*2-1
-					print addedBlock.max(), addedBlock.min()
-					retMatrix2 = concatenate((retMatrix2, addedBlock),1)
-					# print lowerLimit1, upperLimit1, lowerLimit2, upperLimit2
+					if (addedBlock.max()==1 and addedBlock.min()==-1):
+						retMatrix2 = concatenate((retMatrix2, addedBlock),1)
+					print lowerLimit1, upperLimit1, lowerLimit2, upperLimit2
 	print shape(retMatrix2)		
 	return retMatrix2
 
